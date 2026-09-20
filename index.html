@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hän Language Tools</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#1b1f27;
+    --card:#242a35;
+    --card-hover:#2c3341;
+    --line:#3a4150;
+    --text:#e9ebf0;
+    --dim:#9aa3b1;
+    --accent:#c98a3d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;min-height:100vh;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;padding:40px 20px;
+  }
+  .wrap{max-width:760px;width:100%;}
+  h1{font-size:26px;font-weight:700;margin:0 0 6px;text-align:center;}
+  p.sub{color:var(--dim);text-align:center;margin:0 0 36px;font-size:14px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:600px){ .grid{grid-template-columns:1fr;} }
+  a.card{
+    display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:22px;text-decoration:none;color:inherit;transition:background .15s,border-color .15s,transform .1s;
+  }
+  a.card:hover{background:var(--card-hover);border-color:var(--accent);transform:translateY(-1px);}
+  .icon{font-size:28px;margin-bottom:10px;display:block;}
+  .card h2{font-size:17px;margin:0 0 6px;font-weight:600;}
+  .card p{font-size:13px;color:var(--dim);margin:0;line-height:1.5;}
+  footer{margin-top:32px;text-align:center;font-size:12px;color:var(--dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Hän Language Tools</h1>
+  <p class="sub">Pick a tool. Each opens in its own tab — your work in one doesn't affect the others.</p>
+  <div class="grid">
+    <a class="card" href="print-layout-editor.html">
+      <span class="icon">📖</span>
+      <h2>Storybook Creator</h2>
+      <p>Lay out a bilingual picture book — text boxes, drag/resize, drop shadow &amp; outline effects, three layout modes, PDF crop-import, undo/redo, print-ready export.</p>
+    </a>
+    <a class="card" href="han-word-processor.html">
+      <span class="icon">ᐊ</span>
+      <h2>Syllabics Word Processor</h2>
+      <p>Type CLC romanization, get live Unified Canadian Aboriginal Syllabics. Eagle/Moosehide toggle, full rich-text formatting, story import.</p>
+    </a>
+    <a class="card" href="han-lesson-editor.html">
+      <span class="icon">📝</span>
+      <h2>Lesson Editor</h2>
+      <p>Paste raw notes, get an auto-formatted lesson page — section headers, pattern callouts, definition boxes, interlinear examples, vocab tables.</p>
+    </a>
+    <a class="card" href="lyric-slides.html">
+      <span class="icon">🎵</span>
+      <h2>Lyric Slides</h2>
+      <p>Bilingual song lyric presenter — slideshow, single-page view, and print-to-PDF handout, with a full appearance panel.</p>
+    </a>
+  </div>
+  <footer>Each tool is fully offline once loaded. Keep all five files (this launcher + the four tools) together in one folder — the links above and the syllabics bridge both depend on that.</footer>
+</div>
+</body>
+</html>

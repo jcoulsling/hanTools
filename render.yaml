@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: han-language-tools
+    runtime: static
+    buildCommand: ""
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: false
