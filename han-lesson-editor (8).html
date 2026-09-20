@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hän Lesson Editor / Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika&family=Gentium+Book+Plus:ital@0;1&family=Noto+Sans:ital,wght@0,400;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0B2A4A; --blue:#1E5F9E; --sky:#DCEAF7; --ice:#F4F9FD;
+  --accent:#3E8ED0; --rule:#C9D9E8; --ink:#1A1A1A; --muted:#5B6B7A;
+  /* --font-han carries the diacritic-heavy Hän text — pick one with good
+     mark-to-mark (mkmk) support for stacked combining diacritics.
+     --font-body is the UI / English text font. Both are user-selectable. */
+  --font-han:Arial, 'Noto Sans', 'Gentium Book Plus', 'Andika', Georgia, sans-serif;
+  --font-body:Arial, Helvetica, sans-serif;
+}
+.diacritic-text{
+  font-family:var(--font-han);
+  text-rendering:optimizeLegibility;
+  font-feature-settings:"mark" 1,"mkmk" 1,"kern" 1;
+  font-variant-ligatures:normal;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--font-body);color:var(--ink);background:var(--ice);}
+header{
+  background:linear-gradient(160deg,var(--navy),var(--blue),var(--accent));
+  color:#fff;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+header h1{font-family:var(--font-body);font-size:1.3rem;margin:0;}
+header p{margin:2px 0 0;font-size:0.8rem;opacity:0.85;}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.toolbar button, .toolbar label{
+  background:#fff;color:var(--navy);border:none;padding:9px 14px;border-radius:6px;
+  font-size:0.85rem;font-weight:600;cursor:pointer;display:inline-block;
+}
+.toolbar button:hover, .toolbar label:hover{background:var(--sky);}
+.toolbar button:disabled{opacity:.35;cursor:not-allowed;}
+.toolbar button:disabled:hover{background:none;}
+.toolbar input[type=file]{display:none;}
+.status{font-size:0.78rem;color:#fff;background:rgba(255,255,255,0.15);padding:6px 10px;border-radius:5px;width:100%;}
+.newblock-bar{
+  background:var(--sky);border-bottom:1px solid var(--rule);padding:10px 28px;
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+}
+.newblock-bar .nb-label{font-size:0.8rem;font-weight:700;color:var(--navy);margin-right:4px;}
+.newblock-bar .nb-btn{
+  background:#fff;color:var(--blue);border:1px solid var(--rule);padding:6px 11px;
+  border-radius:14px;font-size:0.78rem;font-weight:600;cursor:pointer;
+}
+.newblock-bar .nb-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+.raw-block-remove{
+  float:right;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;
+  line-height:1;padding:0 2px;
+}
+.raw-block-remove:hover{color:#b5651d;}
+.format-toolbar{
+  position:sticky;top:0;z-index:5;background:#fff;border:1px solid var(--rule);border-radius:6px;
+  margin:0 8px 12px;padding:6px 8px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;
+}
+.format-toolbar button{
+  background:var(--ice);border:1px solid var(--rule);border-radius:4px;padding:5px 9px;
+  font-size:0.8rem;cursor:pointer;color:var(--ink);min-width:28px;
+}
+.format-toolbar button:hover{background:var(--sky);border-color:var(--blue);}
+.format-toolbar select{
+  border:1px solid var(--rule);border-radius:4px;padding:5px 6px;font-size:0.78rem;background:#fff;
+}
+.format-toolbar .ft-sep{width:1px;align-self:stretch;background:var(--rule);margin:0 2px;}
+.ft-color-picker{position:relative;}
+.ft-color-trigger{
+  display:flex;align-items:center;gap:4px;font-size:0.8rem;border:1px solid var(--rule);
+  border-radius:4px;padding:5px 8px;cursor:pointer;background:var(--ice);color:var(--ink);
+}
+.ft-color-trigger:hover{background:var(--sky);border-color:var(--blue);}
+.ft-color-trigger .swatch-dot{
+  width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.2);display:inline-block;
+}
+.ft-color-popover{
+  display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:20;background:#fff;
+  border:1px solid var(--rule);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.15);padding:8px;min-width:150px;
+}
+.ft-color-popover.open{display:block;}
+.swatch-grid{display:grid;grid-template-columns:repeat(6, 1fr);gap:5px;margin-bottom:6px;}
+.swatch-grid button{
+  width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.15);cursor:pointer;padding:0;
+}
+.swatch-grid button:hover{outline:2px solid var(--blue);outline-offset:1px;}
+.clear-hilite-btn{
+  width:100%;text-align:left;background:var(--ice);border:1px solid var(--rule);border-radius:4px;
+  padding:5px 8px;font-size:0.78rem;cursor:pointer;margin-bottom:6px;color:var(--ink);
+}
+.clear-hilite-btn:hover{background:var(--sky);}
+.custom-color-row{
+  display:flex;align-items:center;justify-content:space-between;font-size:0.78rem;
+  color:var(--muted);border-top:1px solid var(--rule);padding-top:6px;cursor:pointer;
+}
+.custom-color-row input[type=color]{width:22px;height:22px;border:none;padding:0;background:none;cursor:pointer;}
+main{display:flex;gap:0;height:calc(100vh - 96px);min-height:500px;}
+.pane{flex:1;overflow-y:auto;padding:18px;}
+.pane-left{background:#fff;border-right:2px solid var(--rule);max-width:38%;}
+.pane-right{background:var(--ice);}
+.pane h2{font-family:var(--font-body);font-size:1rem;color:var(--navy);margin-top:0;
+  border-bottom:1.5pt solid var(--blue);padding-bottom:6px;}
+.raw-block{
+  border:1px solid var(--rule);border-radius:6px;padding:10px;margin-bottom:10px;
+  background:var(--ice);font-size:0.8rem;
+}
+.raw-block .tag{
+  display:inline-block;font-size:0.65rem;font-weight:700;color:var(--blue);
+  text-transform:uppercase;letter-spacing:0.04em;margin-bottom:5px;
+}
+.raw-block.flagged{border-color:#d08a3e;background:#fff6ec;}
+.raw-block.flagged .tag{color:#b5651d;}
+.raw-block textarea{
+  width:100%;min-height:50px;border:1px solid var(--rule);border-radius:4px;
+  font-family:inherit;font-size:0.78rem;padding:6px;resize:vertical;
+}
+/* ---- preview / print styling (shared with lesson output) ---- */
+.doc{max-width:800px;margin:0 auto;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,0.08);}
+.doc-inner{padding:14mm 18mm;}
+.cover{
+  background:linear-gradient(160deg,var(--navy),var(--blue),var(--accent));
+  color:#fff;padding:60px 18mm;text-align:center;
+}
+.cover h1{font-family:var(--font-han);font-size:2rem;margin:0;text-rendering:optimizeLegibility;font-feature-settings:"mark" 1,"mkmk" 1;}
+.section-header{
+  font-family:var(--font-han);color:var(--navy);font-size:1.15rem;margin:26px 0 10px;
+  text-rendering:optimizeLegibility;font-feature-settings:"mark" 1,"mkmk" 1;
+  border-bottom:1.5pt solid var(--blue);padding-bottom:6px;
+}
+.section-header .num{color:var(--accent);margin-right:8px;}
+.block{margin-bottom:14px;outline:none;}
+.block-wrap{display:contents;}
+.block-wrap.block-selected > *{outline:2px solid #2E4057;outline-offset:3px;border-radius:3px;background:#eef3f8;}
+.block-ctx-menu{
+  position:fixed;z-index:200;background:#fff;border:1px solid #ccc;border-radius:6px;
+  box-shadow:0 4px 14px rgba(0,0,0,.18);padding:4px;min-width:160px;font-size:0.85rem;
+}
+.block-ctx-menu button{
+  display:block;width:100%;text-align:left;background:none;border:none;padding:7px 10px;
+  border-radius:4px;cursor:pointer;color:#b5651d;font-size:0.85rem;
+}
+.block-ctx-menu button:hover{background:#fdecea;}
+.pattern-callout{
+  background:var(--sky);border-left:3pt solid var(--blue);padding:4mm;border-radius:0 4px 4px 0;
+}
+.note-box{
+  background:#fff;border:1px solid var(--rule);border-left:3pt solid var(--muted);
+  padding:4mm;border-radius:0 4px 4px 0;font-size:0.9em;color:var(--muted);
+}
+.definition-box{background:var(--ice);border:1px solid var(--rule);border-radius:6px;padding:4mm;}
+.definition-box dt{font-weight:700;color:var(--navy);}
+.definition-box dd{margin:0 0 8px 0;color:var(--ink);}
+.interlinear-card{
+  border:1px solid var(--rule);border-radius:6px;padding:4mm;background:#fff;
+}
+.interlinear-card .han{font-family:var(--font-han);font-style:italic;font-size:1.05em;
+  text-rendering:optimizeLegibility;font-feature-settings:"mark" 1,"mkmk" 1,"kern" 1;}
+.interlinear-card .eng{color:var(--muted);margin:2px 0 8px;}
+table.gloss{width:100%;border-collapse:collapse;font-size:0.85em;}
+table.gloss th{background:var(--navy);color:#fff;text-align:left;padding:5px 8px;}
+table.gloss td{padding:5px 8px;border-bottom:0.5pt solid var(--rule);}
+table.gloss tr:nth-child(even) td{background:var(--ice);}
+.morpheme-block{
+  background:var(--sky);border:1px solid var(--rule);border-radius:6px;padding:4mm;
+  font-family:var(--font-han);font-size:1.05em;text-align:center;
+  text-rendering:optimizeLegibility;font-feature-settings:"mark" 1,"mkmk" 1;
+}
+.ref-list{border:1px solid var(--rule);border-radius:6px;overflow:hidden;}
+.ref-list .row{display:grid;grid-template-columns:1fr 1fr 2fr;border-bottom:0.5pt solid var(--rule);}
+.ref-list .row:nth-child(even){background:var(--ice);}
+.ref-list .row div{padding:6px 8px;font-size:0.85em;}
+.vocab-row{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--rule);border-radius:6px;overflow:hidden;}
+.vocab-row div{padding:6px 9px;font-size:0.85em;}
+.vocab-row .vh{font-family:var(--font-han);border-right:0.5pt solid var(--rule);}
+.vocab-row .ve{color:var(--muted);}
+.vocab-table-block{border:1px solid var(--rule);border-radius:6px;overflow:hidden;}
+.vocab-table-block table{width:100%;border-collapse:collapse;font-size:0.9em;}
+.vocab-table-block thead th{background:var(--navy);color:#fff;text-align:left;padding:7px 12px;font-size:0.85em;}
+.vocab-table-block tbody td{padding:6px 12px;border-top:0.5pt solid var(--rule);}
+.vocab-table-block tbody tr:nth-child(even){background:var(--ice);}
+.vocab-table-block .vw{font-family:var(--font-han);}
+.example-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.example-pair .ex-card{border:1px solid var(--rule);border-radius:8px;padding:10px 12px;}
+.example-pair .ex-card .han{font-family:var(--font-han);font-style:italic;font-size:1.05em;color:var(--navy);}
+.example-pair .ex-card .eng{color:var(--muted);margin-top:2px;}
+.contrast-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--rule);border-radius:6px;overflow:hidden;}
+.contrast-grid .head{background:var(--navy);color:#fff;padding:6px 10px;font-weight:700;font-size:0.85em;}
+.contrast-grid .cell{padding:8px 10px;border-top:0.5pt solid var(--rule);font-size:0.9em;}
+.selfcheck{list-style:none;padding:0;}
+.selfcheck li{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.selfcheck .box{width:14px;height:14px;border:2px solid var(--blue);border-radius:2px;flex-shrink:0;}
+.raw-flag{background:#fff6ec;border:1px dashed #d08a3e;padding:4mm;border-radius:6px;color:#7a4a12;}
+@media print{
+  header, .toolbar, .pane-left{display:none !important;}
+  main{display:block;height:auto;}
+  .pane-right{padding:0;background:#fff;}
+  .doc{box-shadow:none;}
+  @page{size:letter;margin:18mm;}
+  * {-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Hän Lesson Editor / Generator</h1>
+    <p>Upload a source doc → auto-map to lesson blocks → edit → export</p>
+  </div>
+  <div class="toolbar">
+    <label for="fileInput">Upload .docx / .md / .txt</label>
+    <input type="file" id="fileInput" accept=".docx,.md,.txt">
+    <button id="pasteBtn">Paste raw text instead</button>
+    <label style="cursor:default;">Hän text font
+      <select id="hanFontSelect" style="margin-left:6px;font-weight:400;">
+        <optgroup label="Common fonts">
+          <option value="Arial, sans-serif" selected>Arial</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="'Times New Roman', Times, serif">Times New Roman</option>
+          <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+          <option value="Verdana, sans-serif">Verdana</option>
+          <option value="Calibri, 'Segoe UI', sans-serif">Calibri</option>
+          <option value="'Segoe UI', sans-serif">Segoe UI</option>
+          <option value="Tahoma, sans-serif">Tahoma</option>
+        </optgroup>
+        <optgroup label="Recommended (stacked diacritics)">
+          <option value="'Noto Sans', 'Gentium Book Plus', 'Andika', Georgia, serif">Noto Sans</option>
+          <option value="'Noto Serif', 'Gentium Book Plus', 'Andika', Georgia, serif">Noto Serif</option>
+          <option value="'Gentium Book Plus', 'Noto Serif', Georgia, serif">Gentium Book Plus</option>
+          <option value="'Andika', 'Noto Sans', Arial, sans-serif">Andika</option>
+        </optgroup>
+      </select>
+    </label>
+    <label style="cursor:default;">Body font
+      <select id="bodyFontSelect" style="margin-left:6px;font-weight:400;">
+        <option value="Arial, Helvetica, sans-serif" selected>Arial</option>
+        <option value="Inter, Helvetica, Arial, sans-serif">Inter</option>
+        <option value="Georgia, serif">Georgia</option>
+        <option value="'Times New Roman', Times, serif">Times New Roman</option>
+        <option value="Verdana, sans-serif">Verdana</option>
+        <option value="Calibri, 'Segoe UI', sans-serif">Calibri</option>
+        <option value="'Noto Sans', sans-serif">Noto Sans</option>
+      </select>
+    </label>
+    <button id="remapBtn">Re-map headings</button>
+    <button id="undoBtn" title="Undo (Ctrl/Cmd+Z)">↶ Undo</button>
+    <button id="redoBtn" title="Redo (Ctrl/Cmd+Shift+Z)">↷ Redo</button>
+    <button id="exportHtmlBtn">Export HTML</button>
+    <button id="exportPdfBtn">Export PDF</button>
+    <div class="status" id="statusLine">No document loaded yet.</div>
+  </div>
+</header>
+<div class="newblock-bar" id="newBlockBar">
+  <span class="nb-label">New block:</span>
+  <button class="nb-btn" data-type="section-header">＋ Section header</button>
+  <button class="nb-btn" data-type="pattern">＋ Pattern callout</button>
+  <button class="nb-btn" data-type="definition">＋ Definition box</button>
+  <button class="nb-btn" data-type="note">＋ Note box</button>
+  <button class="nb-btn" data-type="interlinear">＋ Interlinear example</button>
+  <button class="nb-btn" data-type="morpheme">＋ Morpheme break-apart</button>
+  <button class="nb-btn" data-type="reflist-item">＋ Reference list row</button>
+  <button class="nb-btn" data-type="vocab-item">＋ Vocab row</button>
+  <button class="nb-btn" data-type="vocab-table">＋ Vocab table</button>
+  <button class="nb-btn" data-type="example-pair">＋ Example pair</button>
+  <button class="nb-btn" data-type="paragraph">＋ Body paragraph</button>
+  <button class="nb-btn" data-type="raw">＋ Raw / unmatched block</button>
+</div>
+<main>
+  <div class="pane pane-left">
+    <h2>Raw parsed blocks</h2>
+    <div id="rawBlocks"><p style="color:var(--muted);font-size:0.85em;">Upload a file to see the parsed, classified blocks here. Each block's type comes from the heading→block mapping — edit the raw text and click "Re-map headings" to reclassify.</p></div>
+  </div>
+  <div class="pane pane-right">
+    <h2 style="padding:0 8px;">Styled preview (editable)</h2>
+    <div class="format-toolbar" id="formatToolbar">
+      <button data-cmd="bold" title="Bold"><b>B</b></button>
+      <button data-cmd="italic" title="Italic"><i>I</i></button>
+      <button data-cmd="underline" title="Underline"><u>U</u></button>
+      <button data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+      <span class="ft-sep"></span>
+      <select id="ftFontFamily" title="Font">
+        <option value="">Font…</option>
+        <option value="Arial, sans-serif">Arial</option>
+        <option value="Georgia, serif">Georgia</option>
+        <option value="'Times New Roman', serif">Times New Roman</option>
+        <option value="Verdana, sans-serif">Verdana</option>
+        <option value="'Noto Sans', sans-serif">Noto Sans</option>
+        <option value="'Courier New', monospace">Courier New</option>
+      </select>
+      <select id="ftFontSize" title="Text size">
+        <option value="">Size…</option>
+        <option value="1">Small</option>
+        <option value="3">Normal</option>
+        <option value="4">Medium</option>
+        <option value="5">Large</option>
+        <option value="6">X-Large</option>
+        <option value="7">XX-Large</option>
+      </select>
+      <span class="ft-sep"></span>
+      <div class="ft-color-picker" id="textColorPicker">
+        <button type="button" class="ft-color-trigger" title="Text colour">A<span class="swatch-dot" id="textColorDot"></span></button>
+        <div class="ft-color-popover" id="textColorPopover">
+          <div class="swatch-grid" id="textColorGrid"></div>
+          <label class="custom-color-row">Custom… <input type="color" id="ftTextColor" value="#1a1a1a"></label>
+        </div>
+      </div>
+      <div class="ft-color-picker" id="hiliteColorPicker">
+        <button type="button" class="ft-color-trigger" title="Highlight colour"><span style="text-decoration:underline wavy;">H</span><span class="swatch-dot" id="hiliteColorDot"></span></button>
+        <div class="ft-color-popover" id="hiliteColorPopover">
+          <div class="swatch-grid" id="hiliteColorGrid"></div>
+          <button type="button" class="clear-hilite-btn" id="clearHiliteBtn">No highlight</button>
+          <label class="custom-color-row">Custom… <input type="color" id="ftHiliteColor" value="#dceaf7"></label>
+        </div>
+      </div>
+      <span class="ft-sep"></span>
+      <button data-cmd="justifyLeft" title="Align left">⟸</button>
+      <button data-cmd="justifyCenter" title="Align centre">↔</button>
+      <button data-cmd="justifyRight" title="Align right">⟹</button>
+      <button data-cmd="justifyFull" title="Justify">☰</button>
+      <span class="ft-sep"></span>
+      <button data-cmd="insertUnorderedList" title="Bullet list">• list</button>
+      <button data-cmd="insertOrderedList" title="Numbered list">1. list</button>
+      <span class="ft-sep"></span>
+      <button data-cmd="removeFormat" title="Clear formatting">Clear</button>
+    </div>
+    <div class="doc" id="docRoot">
+      <div class="cover"><h1 contenteditable="true">Untitled Lesson</h1></div>
+      <div class="doc-inner" id="previewBody" contenteditable="true">
+        <p style="color:var(--muted);">Styled lesson preview will render here after you upload and map a document.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<textarea id="pasteArea" style="display:none;position:fixed;top:10%;left:20%;width:60%;height:60%;z-index:99;padding:16px;font-size:0.9rem;"></textarea>
+<button id="pasteConfirm" style="display:none;position:fixed;top:calc(10% + 62%);left:20%;z-index:99;padding:8px 16px;">Use this text</button>
+
+<script>
+const STATE = { blocks: [] };
+const root = document.documentElement;
+
+// ---------- font selection ----------
+document.getElementById('hanFontSelect').addEventListener('change', (e) => {
+  root.style.setProperty('--font-han', e.target.value);
+});
+document.getElementById('bodyFontSelect').addEventListener('change', (e) => {
+  root.style.setProperty('--font-body', e.target.value);
+});
+
+const statusLine = document.getElementById('statusLine');
+const rawBlocksEl = document.getElementById('rawBlocks');
+const previewBody = document.getElementById('previewBody');
+const coverTitle = document.querySelector('.cover h1');
+
+// ---------- undo / redo ----------
+// Covers structural changes to STATE.blocks (add block, remove block,
+// re-map, load file/paste) — not keystroke-level text edits inside
+// previewBody or a raw textarea, which use the browser's own native
+// undo so we don't fight it mid-sentence.
+let history = [];
+let historyIndex = -1;
+const HISTORY_LIMIT = 50;
+let restoringHistory = false;
+
+function snapshotBlocks(){ return JSON.parse(JSON.stringify(STATE.blocks)); }
+function updateUndoRedoButtons(){
+  const u = document.getElementById('undoBtn'), r = document.getElementById('redoBtn');
+  if (u) u.disabled = historyIndex <= 0;
+  if (r) r.disabled = historyIndex >= history.length - 1;
+}
+function pushHistory(){
+  if (restoringHistory) return;
+  history = history.slice(0, historyIndex + 1);
+  history.push(snapshotBlocks());
+  if (history.length > HISTORY_LIMIT) history.shift();
+  historyIndex = history.length - 1;
+  updateUndoRedoButtons();
+}
+function undo(){
+  if (historyIndex <= 0) return;
+  historyIndex--;
+  restoringHistory = true;
+  STATE.blocks = JSON.parse(JSON.stringify(history[historyIndex]));
+  renderRawPane(STATE.blocks);
+  renderPreview(STATE.blocks);
+  restoringHistory = false;
+  updateUndoRedoButtons();
+  setStatus('Undid last change. ' + STATE.blocks.length + ' block(s).');
+}
+function redo(){
+  if (historyIndex >= history.length - 1) return;
+  historyIndex++;
+  restoringHistory = true;
+  STATE.blocks = JSON.parse(JSON.stringify(history[historyIndex]));
+  renderRawPane(STATE.blocks);
+  renderPreview(STATE.blocks);
+  restoringHistory = false;
+  updateUndoRedoButtons();
+  setStatus('Redid change. ' + STATE.blocks.length + ' block(s).');
+}
+document.getElementById('undoBtn').addEventListener('click', undo);
+document.getElementById('redoBtn').addEventListener('click', redo);
+document.addEventListener('keydown', (e) => {
+  const mod = e.ctrlKey || e.metaKey;
+  if (!mod) return;
+  const active = document.activeElement;
+  const inNativeEditable = active && (active.isContentEditable ||
+    active.tagName === 'TEXTAREA' || active.tagName === 'INPUT');
+  if (inNativeEditable) return; // let the browser's own text-undo run there
+  const key = e.key.toLowerCase();
+  if (key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if ((key === 'z' && e.shiftKey) || key === 'y') { e.preventDefault(); redo(); }
+});
+
+
+// ---------- word-processor style formatting toolbar (acts on preview + cover title) ----------
+// Uses execCommand on the current text selection inside a contenteditable area.
+//
+// Two things have to be true for this to work:
+// 1. A <button> must not steal focus away from the editable area on click, or
+//    the selection is gone before execCommand runs — fixed by preventDefault
+//    on mousedown, but ONLY for buttons. Doing the same for <select> or the
+//    color <input> blocks their own native mousedown behavior (opening the
+//    dropdown / color picker), which is why those controls didn't work at all.
+// 2. <select> and <input type=color> DO legitimately need to take focus to
+//    work, so we can't stop them stealing it — instead we track the last
+//    real selection inside the editable areas and restore it right before
+//    calling execCommand, regardless of what has focus at that moment.
+let savedEditRange = null;
+document.addEventListener('selectionchange', () => {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const node = sel.anchorNode;
+  if (node && (previewBody.contains(node) || coverTitle.contains(node))) {
+    savedEditRange = sel.getRangeAt(0).cloneRange();
+  }
+});
+function restoreEditSelection(){
+  if (!savedEditRange) return;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(savedEditRange);
+}
+
+document.getElementById('formatToolbar').addEventListener('mousedown', (e) => {
+  if (e.target.closest('button')) e.preventDefault();
+});
+document.getElementById('formatToolbar').querySelectorAll('button[data-cmd]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    restoreEditSelection();
+    document.execCommand(btn.dataset.cmd, false, null);
+  });
+});
+document.getElementById('ftFontFamily').addEventListener('change', (e) => {
+  if (e.target.value) { restoreEditSelection(); document.execCommand('fontName', false, e.target.value); }
+  e.target.selectedIndex = 0;
+});
+document.getElementById('ftFontSize').addEventListener('change', (e) => {
+  if (e.target.value) { restoreEditSelection(); document.execCommand('fontSize', false, e.target.value); }
+  e.target.selectedIndex = 0;
+});
+// ---------- colour palettes (preset swatches, with a "Custom…" native picker as fallback) ----------
+const TEXT_COLORS = ['#1a1a1a', '#6b7280', '#0B2A4A', '#1E5F9E', '#B03A2E', '#1E7A46', '#7C4A03', '#6B2FA6', '#ffffff'];
+const HILITE_COLORS = ['#FFF3B0', '#DCEAF7', '#D9F2E3', '#FBE0E0', '#FDE6CC', '#E6DCF7'];
+
+function buildSwatchGrid(gridEl, colors, onPick){
+  gridEl.innerHTML = '';
+  colors.forEach(color => {
+    const sw = document.createElement('button');
+    sw.type = 'button';
+    sw.style.background = color;
+    sw.title = color;
+    sw.addEventListener('click', () => onPick(color));
+    gridEl.appendChild(sw);
+  });
+}
+
+function setupColorPicker({pickerId, popoverId, dotId, applyFn, defaultColor}){
+  const picker = document.getElementById(pickerId);
+  const popover = document.getElementById(popoverId);
+  const dot = document.getElementById(dotId);
+  const trigger = picker.querySelector('.ft-color-trigger');
+  dot.style.background = defaultColor;
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = popover.classList.contains('open');
+    document.querySelectorAll('.ft-color-popover.open').forEach(p => p.classList.remove('open'));
+    if (!isOpen) popover.classList.add('open');
+  });
+
+  function pick(color){
+    restoreEditSelection();
+    applyFn(color);
+    dot.style.background = color;
+    popover.classList.remove('open');
+  }
+  return pick;
+}
+
+const pickTextColor = setupColorPicker({
+  pickerId: 'textColorPicker', popoverId: 'textColorPopover', dotId: 'textColorDot',
+  defaultColor: '#1a1a1a',
+  applyFn: (color) => document.execCommand('foreColor', false, color)
+});
+buildSwatchGrid(document.getElementById('textColorGrid'), TEXT_COLORS, pickTextColor);
+document.getElementById('ftTextColor').addEventListener('input', (e) => pickTextColor(e.target.value));
+
+const pickHiliteColor = setupColorPicker({
+  pickerId: 'hiliteColorPicker', popoverId: 'hiliteColorPopover', dotId: 'hiliteColorDot',
+  defaultColor: '#DCEAF7',
+  applyFn: (color) => document.execCommand('hiliteColor', false, color) || document.execCommand('backColor', false, color)
+});
+buildSwatchGrid(document.getElementById('hiliteColorGrid'), HILITE_COLORS, pickHiliteColor);
+document.getElementById('ftHiliteColor').addEventListener('input', (e) => pickHiliteColor(e.target.value));
+document.getElementById('clearHiliteBtn').addEventListener('click', () => pickHiliteColor('transparent'));
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.ft-color-picker')) {
+    document.querySelectorAll('.ft-color-popover.open').forEach(p => p.classList.remove('open'));
+  }
+});
+
+// ---------- Step 2 mapping heuristics ----------
+// Applied to a flat list of {text, bold, isListItem} paragraph records.
+function classifyParagraphs(paragraphs){
+  const blocks = [];
+  let currentSection = null;
+
+  const isHeadingCandidate = (p) =>
+    p.bold && p.text.trim().length > 0 && p.text.trim().length < 60 &&
+    !/[.?!]$/.test(p.text.trim()) && !/[=+]/.test(p.text);
+
+  const isNoteCandidate = (t) =>
+    /^\*\*|^note[:]/i.test(t.trim()) || /^tip/i.test(t.trim());
+
+  const isMorphemeCandidate = (t) => /=/.test(t) && /\+/.test(t);
+
+  const isHanEnglishPair = (t) =>
+    /\(.*[Hh]än:.*\)/.test(t) || /\(.*[Ee]nglish:.*\)/.test(t);
+
+  const isGlossLine = (t) =>
+    /^(Subject|Object|Verb|Noun|Colour|Size|Amount)/i.test(t.trim());
+
+  const isRefWordLine = (t) =>
+    /^[A-ZÀ-ÿǸŸ'`̀̈]{1,3}[a-zà-ÿǹ'`̀̈]*\s*\?/.test(t.trim()) && t.length < 80;
+
+  let pendingExample = null;
+
+  paragraphs.forEach((p) => {
+    const text = p.text.trim();
+    if (!text) return;
+
+    if (isHeadingCandidate(p)) {
+      if (pendingExample) { blocks.push(pendingExample); pendingExample = null; }
+      currentSection = text;
+      blocks.push({ type: 'section-header', text });
+      return;
+    }
+    if (isMorphemeCandidate(text)) {
+      blocks.push({ type: 'morpheme', text });
+      return;
+    }
+    if (isNoteCandidate(text)) {
+      blocks.push({ type: 'note', text });
+      return;
+    }
+    if (/^(HÄN|ENGLISH)\s*is/i.test(text)) {
+      blocks.push({ type: 'pattern', text });
+      return;
+    }
+    if (isHanEnglishPair(text)) {
+      if (pendingExample) blocks.push(pendingExample);
+      pendingExample = { type: 'interlinear', han: text, glosses: [] };
+      return;
+    }
+    if (isGlossLine(text) && pendingExample) {
+      pendingExample.glosses.push(text);
+      return;
+    }
+    if (isRefWordLine(text)) {
+      blocks.push({ type: 'reflist-item', text });
+      return;
+    }
+    if (/^(Subject|Object|Verb)\s*:/i.test(text) && !pendingExample) {
+      blocks.push({ type: 'definition', text });
+      return;
+    }
+    // default: body paragraph, unless it looks structurally odd
+    if (pendingExample) {
+      // stray line right after an example — treat as continuation gloss
+      pendingExample.glosses.push(text);
+    } else {
+      blocks.push({ type: 'paragraph', text, flagged: false });
+    }
+  });
+  if (pendingExample) blocks.push(pendingExample);
+  return blocks;
+}
+
+// ---------- rendering: raw pane ----------
+// ---------- keep in-progress edits from being clobbered on re-render ----------
+// previewBody and the per-block raw textareas are both editable, but neither
+// writes back to STATE.blocks as you type — only renderPreview()/renderRawPane()
+// ever touch STATE.blocks, and they overwrite the DOM wholesale. Call this
+// before any action that's about to re-render, so live edits in both panes are
+// captured first instead of silently discarded.
+function syncAllEditsToState(){
+  rawBlocksEl.querySelectorAll('textarea').forEach((ta) => {
+    const idx = Number(ta.dataset.index);
+    if(!STATE.blocks[idx]) return;
+    try{
+      const parsed = JSON.parse(ta.value);
+      if(STATE.blocks[idx].html != null && parsed.html == null) parsed.html = STATE.blocks[idx].html;
+      STATE.blocks[idx] = parsed;
+    }catch(e){ /* mid-edit invalid JSON — leave this block's stored state as-is */ }
+  });
+  previewBody.querySelectorAll('.block-wrap').forEach((el) => {
+    const idx = Number(el.dataset.blockidx);
+    if(STATE.blocks[idx]) STATE.blocks[idx].html = el.innerHTML;
+  });
+}
+
+function renderRawPane(blocks){
+  rawBlocksEl.innerHTML = '';
+  blocks.forEach((b, i) => {
+    const div = document.createElement('div');
+    div.className = 'raw-block' + (b.type === 'paragraph' && b.flagged ? ' flagged' : '');
+    div.dataset.index = i;
+    const tag = document.createElement('div');
+    tag.className = 'tag';
+    tag.textContent = b.type;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'raw-block-remove';
+    removeBtn.textContent = '✕ remove';
+    removeBtn.dataset.index = i;
+    tag.appendChild(removeBtn);
+    div.appendChild(tag);
+    const ta = document.createElement('textarea');
+    ta.value = JSON.stringify(b, null, 0);
+    ta.dataset.index = i;
+    div.appendChild(ta);
+    rawBlocksEl.appendChild(div);
+  });
+  rawBlocksEl.querySelectorAll('.raw-block-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      syncAllEditsToState();
+      const idx = Number(btn.dataset.index);
+      STATE.blocks.splice(idx, 1);
+      renderRawPane(STATE.blocks);
+      renderPreview(STATE.blocks);
+      pushHistory();
+      setStatus('Removed block ' + (idx+1) + '. ' + STATE.blocks.length + ' blocks remain.');
+    });
+  });
+}
+
+// ---------- new block from scratch ----------
+function blankBlock(type){
+  switch(type){
+    case 'section-header': return { type, text: 'New Section Title' };
+    case 'pattern': return { type, text: 'HÄN is: ... · ENGLISH is: ...' };
+    case 'definition': return { type, text: 'Term: definition goes here' };
+    case 'note': return { type, text: 'Note: add a tip or caveat here' };
+    case 'interlinear': return { type, han: 'Hän sentence here.', glosses: ['Subject: ...', 'Object: ...', 'Verb: ...'] };
+    case 'morpheme': return { type, text: 'base + suffix = derived form' };
+    case 'reflist-item': return { type, text: 'Word — meaning — position rule' };
+    case 'vocab-item': return { type, han: 'word', eng: 'gloss' };
+    case 'vocab-table': return { type, rows: [
+      { word: "Yà", meaning: "(marks yes/no ?)" },
+      { word: "Dòk?", meaning: "Who?" },
+      { word: "Jì?", meaning: "What?" },
+      { word: "Ǹdè?", meaning: "Where? (usually a physical place)" },
+      { word: "Ǹdè jì'?", meaning: "When?" },
+      { word: "Jì ghà?", meaning: "Why for?" },
+      { word: "Ǹts'ạ'", meaning: "How?" },
+      { word: "Dà(w)nèch'e?", meaning: "How many?" }
+    ]};
+    case 'example-pair': return { type,
+      left:  { han: "Yà Allison wëdzey noh'qy?", eng: "Does Allison see the caribou?" },
+      right: { han: "Allison yà wëdzey noh'qy?", eng: "Does Allison see the caribou?" }
+    };
+    case 'raw': return { type: 'paragraph', text: '[edit this raw/unmatched block]', flagged: true };
+    case 'paragraph':
+    default: return { type: 'paragraph', text: 'New body paragraph.' };
+  }
+}
+document.getElementById('newBlockBar').addEventListener('mousedown', (e) => {
+  // preserve whatever selection/cursor is currently in the preview pane
+  if (e.target.closest('.nb-btn')) e.preventDefault();
+});
+document.getElementById('newBlockBar').addEventListener('click', (e) => {
+  const btn = e.target.closest('.nb-btn');
+  if (!btn) return;
+  syncAllEditsToState();
+  const cursorIdx = getCursorBlockIndex();
+  const newBlock = blankBlock(btn.dataset.type);
+  let insertAt;
+  if (cursorIdx === null) {
+    STATE.blocks.push(newBlock);
+    insertAt = STATE.blocks.length - 1;
+  } else {
+    insertAt = cursorIdx + 1;
+    STATE.blocks.splice(insertAt, 0, newBlock);
+  }
+  renderRawPane(STATE.blocks);
+  renderPreview(STATE.blocks);
+  pushHistory();
+  setStatus('Inserted a new "' + btn.dataset.type + '" block ' +
+    (cursorIdx === null ? 'at the end' : 'after your cursor position') +
+    ' — edit it in the left pane, then click "Re-map headings" to update the preview.');
+  const target = rawBlocksEl.children[insertAt];
+  target && target.scrollIntoView({behavior:'smooth', block:'center'});
+});
+
+// Find the STATE.blocks index of the block currently containing the cursor
+// (or the current selection) inside the preview pane. Returns null if the
+// cursor isn't inside the preview (e.g. nothing has been clicked yet).
+function getCursorBlockIndex(){
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+  const node = sel.anchorNode;
+  if (!node || !previewBody.contains(node)) return null;
+  const el = node.nodeType === 3 ? node.parentElement : node;
+  const wrap = el && el.closest ? el.closest('[data-blockidx]') : null;
+  if (!wrap) return null;
+  const idx = Number(wrap.dataset.blockidx);
+  return Number.isNaN(idx) ? null : idx;
+}
+
+// ---------- rendering: styled preview ----------
+function renderBlockHtml(b){
+  // If this block has been directly edited in the preview pane since it was
+  // last generated from structured data, that edited HTML is now the source
+  // of truth for it — render exactly what's there instead of re-deriving
+  // from b.text/b.han/etc, which would silently discard the edit.
+  if(b.html != null) return b.html;
+  switch(b.type){
+    case 'section-header':
+      return `<div class="section-header">${escapeHtml(b.text)}</div>`;
+    case 'pattern':
+      return `<div class="block pattern-callout">${escapeHtml(b.text)}</div>`;
+    case 'note':
+      return `<div class="block note-box">${escapeHtml(b.text)}</div>`;
+    case 'definition':
+      return `<dl class="definition-box block"><dt>${escapeHtml(b.text.split(':')[0])}</dt><dd>${escapeHtml(b.text.split(':').slice(1).join(':'))}</dd></dl>`;
+    case 'morpheme':
+      return `<div class="block morpheme-block">${escapeHtml(b.text)}</div>`;
+    case 'reflist-item':
+      return `<div class="ref-list block"><div class="row"><div>${escapeHtml(b.text)}</div><div></div><div></div></div></div>`;
+    case 'vocab-item':
+      return `<div class="vocab-row block"><div class="vh">${escapeHtml(b.han)}</div><div class="ve">${escapeHtml(b.eng)}</div></div>`;
+    case 'vocab-table': {
+      const rows = (b.rows||[]).map(r =>
+        `<tr><td class="vw">${escapeHtml(r.word)}</td><td>${escapeHtml(r.meaning)}</td></tr>`
+      ).join('');
+      return `<div class="block vocab-table-block"><table>
+        <thead><tr><th>Word</th><th>Meaning</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+    }
+    case 'example-pair': {
+      const card = (c) => `<div class="ex-card"><div class="han">${escapeHtml(c.han)}</div><div class="eng">${escapeHtml(c.eng)}</div></div>`;
+      return `<div class="block example-pair">${card(b.left)}${card(b.right)}</div>`;
+    }
+    case 'interlinear': {
+      const gloss = b.glosses.map(g => {
+        const [label, ...rest] = g.split(/[:\u2013-]/);
+        return `<tr><td>${escapeHtml(label.trim())}</td><td>${escapeHtml(rest.join(':').trim())}</td></tr>`;
+      }).join('');
+      return `<div class="block interlinear-card">
+        <div class="han">${escapeHtml(b.han)}</div>
+        <table class="gloss"><tbody>${gloss}</tbody></table>
+      </div>`;
+    }
+    case 'paragraph':
+      return b.flagged
+        ? `<div class="block raw-flag">⚑ Unmatched — kept verbatim: ${escapeHtml(b.text)}</div>`
+        : `<p class="block">${escapeHtml(b.text)}</p>`;
+    default:
+      return `<p class="block">${escapeHtml(b.text||'')}</p>`;
+  }
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+
+function renderPreview(blocks){
+  previewBody.innerHTML = blocks
+    .map((b, i) => `<div class="block-wrap" data-blockidx="${i}">${renderBlockHtml(b)}</div>`)
+    .join('\n');
+}
+
+// ---------- select-and-delete a block from the preview (right-click, or Delete/Backspace while selected) ----------
+let selectedBlockIdx = null;
+let blockCtxMenu = null;
+
+function clearBlockSelection(){
+  selectedBlockIdx = null;
+  previewBody.querySelectorAll('.block-wrap.block-selected').forEach(el => el.classList.remove('block-selected'));
+  closeBlockCtxMenu();
+}
+function selectBlock(idx){
+  previewBody.querySelectorAll('.block-wrap.block-selected').forEach(el => el.classList.remove('block-selected'));
+  selectedBlockIdx = idx;
+  const wrap = previewBody.querySelector('.block-wrap[data-blockidx="' + idx + '"]');
+  if (wrap) wrap.classList.add('block-selected');
+}
+function deleteSelectedBlock(){
+  if (selectedBlockIdx === null) return;
+  syncAllEditsToState();
+  const idx = selectedBlockIdx;
+  STATE.blocks.splice(idx, 1);
+  clearBlockSelection();
+  renderRawPane(STATE.blocks);
+  renderPreview(STATE.blocks);
+  pushHistory();
+  setStatus('Removed block ' + (idx+1) + '. ' + STATE.blocks.length + ' blocks remain.');
+}
+function closeBlockCtxMenu(){
+  if (blockCtxMenu) { blockCtxMenu.remove(); blockCtxMenu = null; }
+}
+function openBlockCtxMenu(x, y, idx){
+  closeBlockCtxMenu();
+  const menu = document.createElement('div');
+  menu.className = 'block-ctx-menu';
+  const btn = document.createElement('button');
+  btn.textContent = '\u{1F5D1} Delete block';
+  btn.addEventListener('click', (e) => { e.stopPropagation(); deleteSelectedBlock(); });
+  menu.appendChild(btn);
+  document.body.appendChild(menu);
+  // keep it on-screen
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const rect = menu.getBoundingClientRect();
+  menu.style.left = Math.min(x, vw - rect.width - 8) + 'px';
+  menu.style.top = Math.min(y, vh - rect.height - 8) + 'px';
+  blockCtxMenu = menu;
+}
+previewBody.addEventListener('contextmenu', (e) => {
+  const wrap = e.target.closest('.block-wrap');
+  if (!wrap) return;
+  e.preventDefault();
+  const idx = Number(wrap.dataset.blockidx);
+  selectBlock(idx);
+  openBlockCtxMenu(e.clientX, e.clientY, idx);
+});
+// A plain click means "I want to edit text" — release any block selection
+// (and the menu, if open) so Delete/Backspace goes back to normal text editing.
+previewBody.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return; // only left-click releases selection
+  if (e.target.closest('.block-ctx-menu')) return;
+  clearBlockSelection();
+});
+document.addEventListener('mousedown', (e) => {
+  if (blockCtxMenu && !e.target.closest('.block-ctx-menu') && !e.target.closest('.block-wrap')) {
+    clearBlockSelection();
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if (selectedBlockIdx === null) return;
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    e.preventDefault();
+    deleteSelectedBlock();
+  } else if (e.key === 'Escape') {
+    clearBlockSelection();
+  }
+});
+
+// ---------- vocab-table: Enter adds a row, Backspace at the start of a row deletes it ----------
+function placeCursorAtStart(el){
+  const r = document.createRange();
+  r.selectNodeContents(el);
+  r.collapse(true);
+  const sel = window.getSelection();
+  sel.removeAllRanges(); sel.addRange(r);
+}
+function placeCursorAtEnd(el){
+  const r = document.createRange();
+  r.selectNodeContents(el);
+  r.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges(); sel.addRange(r);
+}
+previewBody.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== 'Backspace') return;
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const startNode = range.startContainer;
+  const cellEl = (startNode.nodeType === 3 ? startNode.parentElement : startNode).closest('td');
+  if (!cellEl) return;
+  const table = cellEl.closest('.vocab-table-block table');
+  if (!table) return;
+  const row = cellEl.closest('tr');
+  const tbody = table.querySelector('tbody');
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = '<td class="vw"><br></td><td><br></td>';
+    row.after(newRow);
+    placeCursorAtStart(newRow.firstElementChild);
+    syncAllEditsToState();
+    pushHistory();
+    return;
+  }
+
+  // Backspace: only treat as "delete this row" when the cursor sits at the
+  // very start of the row's first (word) cell — otherwise let the browser
+  // delete a character like normal.
+  const atCellStart = range.collapsed && range.startOffset === 0 &&
+    (startNode === cellEl || (startNode.nodeType === 3 && startNode === cellEl.firstChild));
+  if (!atCellStart || cellEl !== row.firstElementChild) return;
+  const rows = tbody.querySelectorAll('tr');
+  if (rows.length <= 1) return; // always keep at least one row
+  e.preventDefault();
+  const prevRow = row.previousElementSibling;
+  row.remove();
+  if (prevRow) placeCursorAtEnd(prevRow.lastElementChild);
+  syncAllEditsToState();
+  pushHistory();
+});
+
+function setStatus(msg){ statusLine.textContent = msg; }
+
+// ---------- file handling ----------
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  setStatus('Parsing ' + file.name + '...');
+  try{
+    let paragraphs = [];
+    if (file.name.endsWith('.docx')) {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.convertToHtml({arrayBuffer});
+      const container = document.createElement('div');
+      container.innerHTML = result.value;
+      paragraphs = Array.from(container.children).map(el => ({
+        text: el.textContent,
+        bold: !!el.querySelector('strong') || (el.tagName && /^H[1-6]$/.test(el.tagName)),
+      }));
+    } else {
+      const text = await file.text();
+      paragraphs = text.split(/\n+/).map(line => ({
+        text: line, bold: /^#{1,3}\s/.test(line) || (line === line.toUpperCase() && line.trim().length>0 && line.trim().length<60)
+      }));
+    }
+    STATE.blocks = classifyParagraphs(paragraphs);
+    renderRawPane(STATE.blocks);
+    renderPreview(STATE.blocks);
+    coverTitle.textContent = file.name.replace(/\.[^.]+$/, '');
+    pushHistory();
+    setStatus('Loaded ' + file.name + ' — ' + STATE.blocks.length + ' blocks mapped.');
+  } catch(err){
+    console.error(err);
+    setStatus('Could not parse this file (' + err.message + '). Try "Paste raw text instead".');
+  }
+});
+
+// ---------- paste fallback ----------
+const pasteArea = document.getElementById('pasteArea');
+const pasteConfirm = document.getElementById('pasteConfirm');
+document.getElementById('pasteBtn').addEventListener('click', () => {
+  pasteArea.style.display = 'block';
+  pasteConfirm.style.display = 'block';
+  pasteArea.focus();
+});
+pasteConfirm.addEventListener('click', () => {
+  const text = pasteArea.value;
+  const paragraphs = text.split(/\n+/).map(line => ({
+    text: line, bold: line.trim().length>0 && line.trim().length<60 && line === line.trim() && /^[A-Z]/.test(line.trim()) && !/[.?!]$/.test(line.trim())
+  }));
+  STATE.blocks = classifyParagraphs(paragraphs);
+  renderRawPane(STATE.blocks);
+  renderPreview(STATE.blocks);
+  pasteArea.style.display = 'none';
+  pasteConfirm.style.display = 'none';
+  pushHistory();
+  setStatus('Loaded pasted text — ' + STATE.blocks.length + ' blocks mapped.');
+});
+
+// ---------- re-map from edited raw blocks ----------
+document.getElementById('remapBtn').addEventListener('click', () => {
+  syncAllEditsToState();
+  renderPreview(STATE.blocks);
+  pushHistory();
+  setStatus('Re-mapped ' + STATE.blocks.length + ' blocks from your edits.');
+});
+
+// ---------- export ----------
+document.getElementById('exportHtmlBtn').addEventListener('click', () => {
+  const html = buildStandaloneHtml();
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (coverTitle.textContent || 'lesson').replace(/\s+/g,'_') + '.html';
+  a.click();
+});
+document.getElementById('exportPdfBtn').addEventListener('click', () => window.print());
+
+function buildStandaloneHtml(){
+  const styles = document.querySelector('style').outerHTML;
+  const fontsLink = document.querySelector('link[href*="fonts.googleapis.com/css2"]').outerHTML;
+  const hanFont = root.style.getPropertyValue('--font-han') ||
+    getComputedStyle(root).getPropertyValue('--font-han');
+  const bodyFont = root.style.getPropertyValue('--font-body') ||
+    getComputedStyle(root).getPropertyValue('--font-body');
+  const fontVarOverride = `<style>:root{--font-han:${hanFont};--font-body:${bodyFont};}</style>`;
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHtml(coverTitle.textContent)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  ${fontsLink}
+  ${styles}
+  ${fontVarOverride}
+  </head>
+  <body><div class="doc"><div class="cover"><h1>${escapeHtml(coverTitle.textContent)}</h1></div>
+  <div class="doc-inner">${previewBody.innerHTML}</div></div></body></html>`;
+}
+
+// ---------- init ----------
+pushHistory();
+updateUndoRedoButtons();
+</script>
+</body>
+</html>
